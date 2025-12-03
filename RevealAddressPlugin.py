@@ -66,7 +66,7 @@ class RevealAddressPlugin:
         self.iface = iface
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
-        self.icon_path = f'{self.plugin_dir}\icons\icon.svg'
+        self.icon_path = os.path.join(self.plugin_dir, 'icons', 'icon.svg')
 
         self.actions = []
         self.menu = u'&EnviroSolutions'
