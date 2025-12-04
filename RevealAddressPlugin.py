@@ -152,19 +152,15 @@ class RevealAddressPlugin:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         if hasattr(self, 'actions'):
-            for action in self.actions:
-                self.iface.removePluginMenu(
-                    u'&EnviroSolutions',
-                    action)
-                # self.iface.removeToolBarIcon(action)
-        if hasattr(self, 'toolbar'):
-            self.toolbar.removeAction(action)
-                    
-        # Remove the map tool and action when the plugin is unloaded
+                    for action in self.actions:
+                        self.iface.removePluginMenu(
+                            u'&EnviroSolutions',
+                            action)
+
+
+        if hasattr(self, 'toolbar') and self.toolbar:
+            self.toolbar.clear() 
+            self.toolbar = None 
+            
         if hasattr(self, 'map_tool') and self.map_tool:
             self.iface.mapCanvas().unsetMapTool(self.map_tool)
-
-        # remove the toolbar
-        if hasattr(self, 'toolbar'):
-            del self.toolbar
-            self.toolbar = None
