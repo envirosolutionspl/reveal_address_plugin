@@ -157,8 +157,8 @@ class RevealAddressPlugin:
                     u'&EnviroSolutions',
                     action)
                 # self.iface.removeToolBarIcon(action)
-                if hasattr(self, 'toolbar'):
-                    self.toolbar.removeAction(action)
+        if hasattr(self, 'toolbar'):
+            self.toolbar.removeAction(action)
                     
         # Remove the map tool and action when the plugin is unloaded
         if hasattr(self, 'map_tool') and self.map_tool:
@@ -167,3 +167,4 @@ class RevealAddressPlugin:
         # remove the toolbar
         if hasattr(self, 'toolbar'):
             del self.toolbar
+            self.toolbar = None
