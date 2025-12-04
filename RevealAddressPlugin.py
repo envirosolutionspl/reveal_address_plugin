@@ -10,7 +10,7 @@ import os
 
 """Wersja wtyczki"""
 plugin_name = "Reveal address"
-plugin_version = "1.2.1"
+plugin_version = "1.2.2"
 
 class RevealAddressMapTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
@@ -18,7 +18,7 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
         QgsMapToolEmitPoint.__init__(self, self.canvas)
 
         # Create a coordinate transform object to transform the coordinates from the canvas CRS to WGS 84
-        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(), QgsCoordinateReferenceSystem(4326), canvas.mapSettings().transformContext())
+        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(), QgsCoordinateReferenceSystem.fromEpsgId(4326), canvas.mapSettings().transformContext())
 
         # Create a QgsNetworkAccessManager object
         self.nam = QgsNetworkAccessManager.instance()
@@ -34,6 +34,8 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
         url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={}&lon={}".format(click_coords_4326.y(), click_coords_4326.x())
         req = QNetworkRequest(QUrl(url))
 
+        req.setHeader(QNetworkRequest.KnownHeaders.UserAgentHeader, "QGIS-Plugin-RevealAddress")
+
         # Send the GET request and connect the finished signal to the self.handleResult() method
         reply = self.nam.get(req)
         result = reply.finished.connect(self.handleResult)
@@ -43,10 +45,10 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
 
     def handleResult(self):
         reply = self.sender()
-        if reply.error() != QNetworkReply.NoError:
+        if reply.error() != QNetworkReply.NetworkError.NoError:
             print("Request error: ", reply.error())
             return
-        address_json = json.loads(str(reply.readAll(), 'utf-8'))
+        address_json = json.loads(bytes(reply.readAll()).decode('utf-8'))
         if "display_name" in address_json:
             address = address_json["display_name"]
         else:
@@ -66,7 +68,7 @@ class RevealAddressPlugin:
         self.iface = iface
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
-        self.icon_path = f'{self.plugin_dir}\icons\icon.svg'
+        self.icon_path = os.path.join(self.plugin_dir, 'icons', 'icon.svg')
 
         self.actions = []
         self.menu = u'&EnviroSolutions'
@@ -97,7 +99,7 @@ class RevealAddressPlugin:
             action = QAction(icon, text, parent)
             action.triggered.connect(callback)
             action.setEnabled(enabled_flag)
-
+            
             if status_tip is not None:
                 action.setStatusTip(status_tip)
 
@@ -118,9 +120,7 @@ class RevealAddressPlugin:
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
-        """Get the translation for a string using Qt translation API.
-
-        We implement this ourselves since we do not inherit QObject.
+        """We implement this ourselves since we do not inherit QObject.
 
         :param message: String for translation.
         :type message: str, QString
@@ -151,16 +151,19 @@ class RevealAddressPlugin:
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-        for action in self.actions:
-            self.iface.removePluginMenu(
-                u'&EnviroSolutions',
-                action)
-            # self.iface.removeToolBarIcon(action)
-            self.toolbar.removeAction(action)
+        if hasattr(self, 'actions'):
+            for action in self.actions:
+                self.iface.removePluginMenu(
+                    u'&EnviroSolutions',
+                    action)
+                # self.iface.removeToolBarIcon(action)
+                if hasattr(self, 'toolbar') and self.toolbar:
+                    self.toolbar.removeAction(action)
                 
         # Remove the map tool and action when the plugin is unloaded
-        if self.map_tool:
+        if hasattr(self, 'map_tool') and self.map_tool:
             self.iface.mapCanvas().unsetMapTool(self.map_tool)
 
         # remove the toolbar
-        del self.toolbar
+        if hasattr(self, 'toolbar'):
+            del self.toolbar
