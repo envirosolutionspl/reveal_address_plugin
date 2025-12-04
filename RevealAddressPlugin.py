@@ -10,7 +10,7 @@ import os
 
 """Wersja wtyczki"""
 plugin_name = "Reveal address"
-plugin_version = "1.2.1"
+plugin_version = "1.2.2"
 
 class RevealAddressMapTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
