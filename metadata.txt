@@ -23,7 +23,8 @@ repository=https://github.com/envirosolutionspl/reveal_address_plugin
 hasProcessingProvider=no
 changelog=
     v1.2.2
-    * Dostosowanie do Qt6
+    * Wprowadzono kompatybilność z bibliotekami Qt6 (przygotowanie pod QGIS 4) przy zachowaniu pełnego wsparcia dla Qt5 (QGIS 3).
+    * Dodanie testów automatycznych.
     v1.2.1
     * Zmiana loga wtyczki
     * Unifikacja wyglądu wtyczki
