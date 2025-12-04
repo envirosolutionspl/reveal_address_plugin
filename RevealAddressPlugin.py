@@ -18,7 +18,7 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
         QgsMapToolEmitPoint.__init__(self, self.canvas)
 
         # Create a coordinate transform object to transform the coordinates from the canvas CRS to WGS 84
-        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(), QgsCoordinateReferenceSystem(4326), canvas.mapSettings().transformContext())
+        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(), QgsCoordinateReferenceSystem.fromEpsgId(4326), canvas.mapSettings().transformContext())
 
         # Create a QgsNetworkAccessManager object
         self.nam = QgsNetworkAccessManager.instance()
