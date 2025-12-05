@@ -12,25 +12,19 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
         self.canvas = canvas
         QgsMapToolEmitPoint.__init__(self, self.canvas)
-
-        # Create a coordinate transform object to transform the coordinates from the canvas CRS to WGS 84
-        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(), QgsCoordinateReferenceSystem.fromEpsgId(4326), canvas.mapSettings().transformContext())
-
-        # Create a QgsNetworkAccessManager object
+        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(), 
+            QgsCoordinateReferenceSystem.fromEpsgId(4326), 
+            canvas.mapSettings().transformContext()
+        )
         self.nam = QgsNetworkAccessManager.instance()
 
     def canvasReleaseEvent(self, event):
-        # Get the click coordinates
         click_coords = self.toMapCoordinates(event.pos())
-
-        # Transform the coordinates from the canvas CRS to WGS 84
         click_coords_4326 = self.coord_transform.transform(click_coords)
-
-        # Create a GET request to the Nominatim API with the lat and lon of the click
-        url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={}&lon={}".format(click_coords_4326.y(), click_coords_4326.x())
-        req = QNetworkRequest(QUrl(url))
-
-        # Send the GET request and connect the finished signal to the self.handleResult() method
+        url = (f"https://nominatim.openstreetmap.org/reverse?format=json"
+               f"&lat={click_coords_4326.y()}&lon={click_coords_4326.x()}"
+        )
+        req = QNetworkRequest(QUrl(url))          
         reply = self.nam.get(req)
         result = reply.finished.connect(self.handleResult)
 
@@ -42,15 +36,16 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
         if reply.error() != QNetworkReply.NoError:
             print("Request error: ", reply.error())
             return
+        
         address_json = json.loads(str(reply.readAll(), 'utf-8'))
+
         if "display_name" in address_json:
             address = address_json["display_name"]
         else:
             address = "No address found"
 
-        # Show the address in a message box
         QMessageBox.information(None, "Address", address)
-        
+
         return True
 
 
@@ -58,12 +53,9 @@ class RevealAddressPlugin:
     def __init__(self, iface):
         self.map_tool = None
         self.action = None
-        # Save reference to the QGIS interface
         self.iface = iface
-        # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         self.icon_path = os.path.join(self.plugin_dir, 'icons', 'icon.svg')
-
         self.actions = []
         self.menu = u'&EnviroSolutions'
         self.toolbar = self.iface.mainWindow().findChild(QToolBar, 'EnviroSolutions')
@@ -73,11 +65,9 @@ class RevealAddressPlugin:
             self.toolbar.setObjectName(u'EnviroSolutions')
             
         self.shortcut = None
-        # Check if plugin was started the first time in current QGIS session
-        # Must be set in initGui() to survive plugin reloads
         self.first_start = None
 
-    def add_action(
+    def addAction(
                 self,
                 icon_path,
                 text,
@@ -112,7 +102,6 @@ class RevealAddressPlugin:
 
             return action
 
-    # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
 
@@ -124,24 +113,21 @@ class RevealAddressPlugin:
         :returns: Translated version of message.
         :rtype: QString
         """
-        # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('RevealAddressPlugin', message)
     
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        self.add_action(
+        self.addAction(
             self.icon_path,
             text=self.tr(u'Reveal Address'),
             callback=self.run,
             parent=self.iface.mainWindow()
         )
-        
-        # will be set False in run()
+
         self.first_start = True
 
     def run(self):
-        # Create and set the map tool
         self.map_tool = RevealAddressMapTool(self.iface.mapCanvas())
         self.iface.mapCanvas().setMapTool(self.map_tool)
 
@@ -152,7 +138,6 @@ class RevealAddressPlugin:
                         self.iface.removePluginMenu(
                             u'&EnviroSolutions',
                             action)
-
 
         if hasattr(self, 'toolbar') and self.toolbar:
             self.toolbar.clear() 
