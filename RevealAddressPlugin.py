@@ -8,10 +8,6 @@ from qgis.PyQt.QtGui import QIcon
 import json
 import os
 
-"""Wersja wtyczki"""
-plugin_name = "Reveal address"
-plugin_version = "1.2.1"
-
 class RevealAddressMapTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
         self.canvas = canvas

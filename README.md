@@ -17,6 +17,10 @@ Wtyczka QGIS, która umożliwia użytkownikom wyświetlanie adresu wybranej loka
 
 Wtyczka nie wymaga danych do działania. 
 
+### UWAGA:
+* Warunkiem koniecznym do prawidłowego działania wtyczki jest posiadanie wersji QGIS 3.28.5 lub wyższej.
+* Wtyczka nie wymaga danych do działania. 
+
 ## EN
 A QGIS plugin that allows users to view the address of a location on the map by clicking on it. The plugin uses the Nominatim API to reverse geocode the coordinates of the clicked location to obtain its address. Plugin has been made with ChatGPT.
 
@@ -30,4 +34,6 @@ A QGIS plugin that allows users to view the address of a location on the map by 
 1. After installing the plugin, click on the Reveal Address plugin button in the top toolbar to activate the map tool.
 2. Click on a location on the map to view its address in a message box.
 
-The plugin does not require any data to operate. 
+### NOTE:
+* A necessary condition for the proper functioning of the plugin is having QGIS version 3.28.5 or higher.
+* The plugin does not require any data to operate. 
