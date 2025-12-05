@@ -67,7 +67,7 @@ class RevealAddressPlugin:
         self.shortcut = None
         self.first_start = None
 
-    def add_action(
+    def addAction(
                 self,
                 icon_path,
                 text,
@@ -118,7 +118,7 @@ class RevealAddressPlugin:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        self.add_action(
+        self.addAction(
             self.icon_path,
             text=self.tr(u'Reveal Address'),
             callback=self.run,
