@@ -55,7 +55,7 @@ class TestRevealAddressPlugin(unittest.TestCase):
         self.patcher.stop()
         self.canvas.unsetMapTool(self.tool)
 
-    def test_50_random_locations_in_poland(self):
+    def test50RandomLocationsInPoland(self):
         min_lat, max_lat = 49.03, 54.85
         min_lon, max_lon = 14.07, 24.03
 
