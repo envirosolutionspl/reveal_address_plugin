@@ -54,23 +54,62 @@ class TestRevealAddressPlugin(unittest.TestCase):
         self.canvas.unsetMapTool(self.tool)
 
     def test50RandomLocationsInPoland(self):
+        errors = []  
+        success_count = 0 
+        total_tests = 50
+        timeout_limit = 15 
+
         with patch('qgis.PyQt.QtWidgets.QMessageBox.information') as mock_msg_box:
             
-            for i in range(50):
+            for i in range(total_tests):
+                mock_msg_box.reset_mock()
+
                 lat = random.uniform(MIN_LAT, MAX_LAT)
                 lon = random.uniform(MIN_LON, MAX_LON)   
-                print(f"Testowanie lokalizacji {i+1}/50: Lat {lat:.4f}, Lon {lon:.4f}")
+                
+                print(f"Lokalizacja {i+1}/{total_tests}: {lat:.4f}, {lon:.4f} ... ",
+                     end='', flush=True)
+                
                 mock_event = MagicMock()
                 self.tool.toMapCoordinates = MagicMock(return_value=QgsPointXY(lon, lat))
                 self.tool.canvasReleaseEvent(mock_event)
+                
                 start_time = time.time()
+                timeout_occurred = False
+
                 while not mock_msg_box.called:
                     QgsApplication.processEvents()                  
-                    if time.time() - start_time > 15: 
-                        self.fail(f"Timeout: Brak odpowiedzi dla lokalizacji {lat}, {lon}")
+                    if time.time() - start_time > timeout_limit: 
+                        timeout_occurred = True
+                        break 
                     time.sleep(0.01)
-                mock_msg_box.reset_mock()
+                
+                if timeout_occurred:
+                    print("FAIL (Timeout)")
+                    errors.append(f"Iteracja {i+1}: Timeout dla {lat:.4f}, {lon:.4f}")
+                    continue 
+                else:
+                    print("OK")
+                    success_count += 1
+                
                 time.sleep(1.1)
+
+        # === PODSUMOWANIE ===
+        print("\n" + "="*40)
+        print("PODSUMOWANIE TESTU")
+        print("="*40)
+        print(f"Przetestowano: {total_tests}")
+        print(f"Sukcesy:       {success_count}")
+        print(f"Błędy:         {len(errors)}")
+        
+        if errors:
+            print("\nSzczegóły błędów:")
+            for error in errors:
+                print(f" - {error}")
+
+            self.fail(f"Test zakończony niepowodzeniem. Błędy: {len(errors)}/{total_tests}")
+        else:
+            print("\nWszystkie lokalizacje sprawdzone pomyślnie.")
 
 if __name__ == "__main__":
     unittest.main()
