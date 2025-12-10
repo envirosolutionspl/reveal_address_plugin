@@ -26,6 +26,7 @@ changelog=
     v1.3.0
     * Wprowadzono kompatybilność z bibliotekami Qt6 (przygotowanie pod QGIS 4) przy zachowaniu pełnego wsparcia dla Qt5 (QGIS 3).
     * Dodanie testów automatycznych.
+    * QGIS Feed.
     v1.2.1
     * Zmiana loga wtyczki
     * Unifikacja wyglądu wtyczki
