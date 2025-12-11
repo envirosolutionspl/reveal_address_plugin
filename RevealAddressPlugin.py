@@ -7,8 +7,6 @@ from qgis.PyQt.QtCore import QUrl, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 import json
 import os
-from .qgis_feed import QgisFeedDialog
-from . import PLUGIN_NAME
 
 class RevealAddressMapTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
@@ -52,23 +50,30 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
 
 
 class RevealAddressPlugin:
-    def __init__(self, iface):
+    def __init__(self, iface, test_mode=False):
         self.map_tool = None
         self.action = None
         self.settings = QgsSettings()
-        if Qgis.QGIS_VERSION_INT >= 31000:
-            from .qgis_feed import QgisFeed
-            self.selected_industry = self.settings.value("selected_industry", None)
-            show_dialog = self.settings.value("showDialog", True, type=bool)
+        self.test_mode = test_mode
 
-            if self.selected_industry is None and show_dialog:
-                self.showBranchSelectionDialog()
+        if not self.test_mode:
+            if Qgis.QGIS_VERSION_INT >= 31000:
+                try:
+                    from .qgis_feed import QgisFeed, QgisFeedDialog
+                    from . import PLUGIN_NAME
+                    self.selected_industry = self.settings.value("selected_industry", None)
+                    show_dialog = self.settings.value("showDialog", True, type=bool)
 
-            select_indust_session = self.settings.value('selected_industry')
+                    if self.selected_industry is None and show_dialog:
+                        self.showBranchSelectionDialog()
 
-            self.feed = QgisFeed(selected_industry=select_indust_session, 
-                                 plugin_name=PLUGIN_NAME)
-            self.feed.initFeed()
+                    select_indust_session = self.settings.value('selected_industry')
+
+                    self.feed = QgisFeed(selected_industry=select_indust_session, 
+                                         plugin_name=PLUGIN_NAME)
+                    self.feed.initFeed()
+                except ImportError:
+                    print("Pominięto ładowanie QgisFeed (ImportError lub Test Mode)")
 
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
