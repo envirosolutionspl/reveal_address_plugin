@@ -1,12 +1,14 @@
 from qgis.core import QgsNetworkAccessManager, QgsPointXY
 from qgis.gui import QgsMapToolEmitPoint, QgsMapTool, QgsMapCanvas
-from qgis.core import QgsCoordinateTransform, QgsCoordinateReferenceSystem
-from qgis.PyQt.QtWidgets import QMessageBox, QAction, QToolBar
+from qgis.core import QgsCoordinateTransform, QgsCoordinateReferenceSystem, Qgis, QgsSettings
+from qgis.PyQt.QtWidgets import QMessageBox, QAction, QToolBar, QDialog
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 from qgis.PyQt.QtCore import QUrl, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 import json
 import os
+from .qgis_feed import QgisFeedDialog
+from . import PLUGIN_NAME
 
 class RevealAddressMapTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
@@ -53,6 +55,21 @@ class RevealAddressPlugin:
     def __init__(self, iface):
         self.map_tool = None
         self.action = None
+        self.settings = QgsSettings()
+        if Qgis.QGIS_VERSION_INT >= 31000:
+            from .qgis_feed import QgisFeed
+            self.selected_industry = self.settings.value("selected_industry", None)
+            show_dialog = self.settings.value("showDialog", True, type=bool)
+
+            if self.selected_industry is None and show_dialog:
+                self.showBranchSelectionDialog()
+
+            select_indust_session = self.settings.value('selected_industry')
+
+            self.feed = QgisFeed(selected_industry=select_indust_session, 
+                                 plugin_name=PLUGIN_NAME)
+            self.feed.initFeed()
+
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
         self.icon_path = os.path.join(self.plugin_dir, 'icons', 'icon.svg')
@@ -130,6 +147,17 @@ class RevealAddressPlugin:
     def run(self):
         self.map_tool = RevealAddressMapTool(self.iface.mapCanvas())
         self.iface.mapCanvas().setMapTool(self.map_tool)
+
+    def showBranchSelectionDialog(self):
+        self.qgisfeed_dialog = QgisFeedDialog()
+
+        if self.qgisfeed_dialog.exec_() == QDialog.Accepted:
+            self.selected_branch = self.qgisfeed_dialog.comboBox.currentText()
+            
+            #Zapis w QGIS3.ini
+            self.settings.setValue("selected_industry", self.selected_branch)  
+            self.settings.setValue("showDialog", False)
+            self.settings.sync()
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
