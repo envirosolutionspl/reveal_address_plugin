@@ -33,8 +33,14 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
 
     def handleResult(self):
         reply = self.sender()
-        if reply.error() != QNetworkReply.NoError:
-            print("Request error: ", reply.error())
+        err = reply.error()
+        try:
+            no_error = QNetworkReply.NetworkError.NoError
+        except:
+            no_error = QNetworkReply.NoError
+        
+        if err != no_error:
+            print("Request error: ", err)
             return
         
         address_json = json.loads(str(reply.readAll(), 'utf-8'))

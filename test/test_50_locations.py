@@ -13,7 +13,7 @@ from qgis.core import (
 from qgis.gui import QgsMapCanvas
 from qgis.PyQt.QtWidgets import QMessageBox
 from RevealAddressPlugin import RevealAddressMapTool
-from constans import MIN_LAT, MAX_LAT, MIN_LON, MAX_LON
+from constants import MIN_LAT, MAX_LAT, MIN_LON, MAX_LON
 
 class TestRevealAddressPlugin(unittest.TestCase):
 
