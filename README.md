@@ -18,6 +18,7 @@ Wtyczka QGIS, która umożliwia użytkownikom wyświetlanie adresu wybranej loka
 Wtyczka nie wymaga danych do działania. 
 
 ### UWAGA:
+* Zalecane jest korzystanie ze stabilnej wersji QGIS, rekomendowana wersja to 3.40.8.
 * Warunkiem koniecznym do prawidłowego działania wtyczki jest posiadanie wersji QGIS 3.28.5 lub wyższej.
 * Wtyczka nie wymaga danych do działania. 
 
@@ -35,5 +36,6 @@ A QGIS plugin that allows users to view the address of a location on the map by 
 2. Click on a location on the map to view its address in a message box.
 
 ### NOTE:
+* Recomended QGIS version to run the plugin is QGIS 3.40.8.
 * A necessary condition for the proper functioning of the plugin is having QGIS version 3.28.5 or higher.
 * The plugin does not require any data to operate. 
