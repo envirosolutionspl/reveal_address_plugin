@@ -40,9 +40,9 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
         err = reply.error()
         try:
             no_error = QNetworkReply.NetworkError.NoError
-        except:
+        except AttributeError:
             no_error = QNetworkReply.NoError
-        
+
         if err != no_error:
             QgsMessageLog.logMessage(
                 f"Request error: {err}",
