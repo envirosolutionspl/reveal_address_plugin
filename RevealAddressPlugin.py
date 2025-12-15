@@ -1,4 +1,4 @@
-from qgis.core import QgsNetworkAccessManager, QgsPointXY, QgsMessageLog
+from qgis.core import QgsNetworkAccessManager, QgsPointXY
 from qgis.gui import QgsMapToolEmitPoint, QgsMapTool, QgsMapCanvas
 from qgis.core import QgsCoordinateTransform, QgsCoordinateReferenceSystem, Qgis, QgsSettings
 from qgis.PyQt.QtWidgets import QMessageBox, QAction, QToolBar, QDialog
@@ -7,6 +7,7 @@ from qgis.PyQt.QtCore import QUrl, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 import json
 import os
+from .utils import QgsTools
 
 """Wersja wtyczki"""
 from . import PLUGIN_NAME as plugin_name
@@ -21,6 +22,7 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
             canvas.mapSettings().transformContext()
         )
         self.nam = QgsNetworkAccessManager.instance()
+        self.qgs_tools = QgsTools()
 
     def canvasReleaseEvent(self, event):
         click_coords = self.toMapCoordinates(event.pos())
@@ -44,11 +46,8 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
             no_error = QNetworkReply.NoError
 
         if err != no_error:
-            QgsMessageLog.logMessage(
-                f"Request error: {err}",
-                tag=plugin_name,
-                level=Qgis.Critical
-            )
+            msg = f"Request error: {err}"
+            self.qgs_tools.pushLogCritical(msg)
             return
         
         address_json = json.loads(str(reply.readAll(), 'utf-8'))
