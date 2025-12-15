@@ -25,9 +25,10 @@ changelog=
     v1.3.0
     * Dodanie kompatybilności z Qt6 i przygotowanie wsparcia dla QGIS 4.
     * Dodanie testów automatycznych.
-    v1.2.1
-    * Zmiana loga wtyczki
-    * Unifikacja wyglądu wtyczki
+    * Dodanie komunikatów QGIS Feed.
+#   v1.2.1
+#   * Zmiana loga wtyczki
+#   * Unifikacja wyglądu wtyczki
 
 category=Plugins
 icon=icons/icon.svg
