@@ -1,7 +1,8 @@
-from qgis.core import QgsNetworkAccessManager, QgsPointXY
-from qgis.gui import QgsMapToolEmitPoint, QgsMapTool, QgsMapCanvas
-from qgis.core import QgsCoordinateTransform, QgsCoordinateReferenceSystem, Qgis, QgsSettings
-from qgis.PyQt.QtWidgets import QMessageBox, QAction, QToolBar, QDialog
+from qgis.core import (QgsNetworkAccessManager, QgsPointXY,
+                       QgsCoordinateTransform, QgsCoordinateReferenceSystem,
+                       Qgis, QgsSettings)
+from qgis.gui import QgsMapToolEmitPoint
+from qgis.PyQt.QtWidgets import (QMessageBox, QAction, QToolBar, QDialog)
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 from qgis.PyQt.QtCore import QUrl, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
@@ -17,12 +18,11 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
         self.canvas = canvas
         QgsMapToolEmitPoint.__init__(self, self.canvas)
-        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(), 
-            QgsCoordinateReferenceSystem.fromEpsgId(4326), 
+        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(),
+            QgsCoordinateReferenceSystem.fromEpsgId(4326),
             canvas.mapSettings().transformContext()
         )
         self.nam = QgsNetworkAccessManager.instance()
-        self.qgs_tools = QgsTools()
 
     def canvasReleaseEvent(self, event):
         click_coords = self.toMapCoordinates(event.pos())
@@ -47,7 +47,7 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
 
         if err != no_error:
             msg = f"Request error: {err}"
-            self.qgs_tools.pushLogCritical(msg)
+            QgsTools.pushLogCritical(msg)
             return
         
         address_json = json.loads(str(reply.readAll(), 'utf-8'))
@@ -68,7 +68,7 @@ class RevealAddressPlugin:
         self.action = None
         self.settings = QgsSettings()
         self.test_mode = test_mode
-
+        
         if not self.test_mode:
             if Qgis.QGIS_VERSION_INT >= 31000:
                 try:
@@ -86,15 +86,18 @@ class RevealAddressPlugin:
                                          plugin_name=PLUGIN_NAME)
                     self.feed.initFeed()
                 except ImportError:
-                    print("Pominięto ładowanie QgisFeed (ImportError lub Test Mode)")
-
+                    QgsTools.pushLogWarning(
+                        "Pominięto ładowanie QgisFeed "
+                        "(ImportError lub Test Mode)"
+                    )
+                    
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
         self.icon_path = os.path.join(self.plugin_dir, 'icons', 'icon.svg')
         self.actions = []
         self.menu = u'&EnviroSolutions'
         self.toolbar = self.iface.mainWindow().findChild(QToolBar, 'EnviroSolutions')
-        
+
         if not self.toolbar:
             self.toolbar = self.iface.addToolBar(u'EnviroSolutions')
             self.toolbar.setObjectName(u'EnviroSolutions')
