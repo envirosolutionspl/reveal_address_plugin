@@ -1,23 +1,28 @@
-from qgis.core import QgsNetworkAccessManager, QgsPointXY, QgsMessageLog
-from qgis.gui import QgsMapToolEmitPoint, QgsMapTool, QgsMapCanvas
-from qgis.core import QgsCoordinateTransform, QgsCoordinateReferenceSystem, Qgis, QgsSettings
-from qgis.PyQt.QtWidgets import QMessageBox, QAction, QToolBar, QDialog
+from qgis.core import (QgsNetworkAccessManager, QgsPointXY,
+                       QgsCoordinateTransform, QgsCoordinateReferenceSystem,
+                       Qgis, QgsSettings)
+from qgis.gui import QgsMapToolEmitPoint
+from qgis.PyQt.QtWidgets import (QMessageBox, QAction, QToolBar, QDialog)
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 from qgis.PyQt.QtCore import QUrl, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 import json
 import os
+from .utils import QgsTools
+from .constants import EPSG
 
 """Wersja wtyczki"""
 from . import PLUGIN_NAME as plugin_name
 from . import PLUGIN_VERSION as plugin_version
 
 class RevealAddressMapTool(QgsMapToolEmitPoint):
-    def __init__(self, canvas):
+    def __init__(self, canvas, iface):
         self.canvas = canvas
+        self.iface = iface
         QgsMapToolEmitPoint.__init__(self, self.canvas)
-        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(), 
-            QgsCoordinateReferenceSystem.fromEpsgId(4326), 
+        self.qgs_tools = QgsTools(iface)
+        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(),
+            QgsCoordinateReferenceSystem.fromEpsgId(EPSG),
             canvas.mapSettings().transformContext()
         )
         self.nam = QgsNetworkAccessManager.instance()
@@ -25,9 +30,14 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
     def canvasReleaseEvent(self, event):
         click_coords = self.toMapCoordinates(event.pos())
         click_coords_4326 = self.coord_transform.transform(click_coords)
+        self.qgs_tools.pushMessage(
+            f"Kliknięto na mapie: {click_coords} "
+            f"(EPSG:{EPSG}: {click_coords_4326})"
+        )
         url = (f"https://nominatim.openstreetmap.org/reverse?format=json"
                f"&lat={click_coords_4326.y()}&lon={click_coords_4326.x()}"
         )
+        self.qgs_tools.pushMessage(f"Wysyłanie zapytania: {url}")
         req = QNetworkRequest(QUrl(url))          
         reply = self.nam.get(req)
         result = reply.finished.connect(self.handleResult)
@@ -44,12 +54,11 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
             no_error = QNetworkReply.NoError
 
         if err != no_error:
-            QgsMessageLog.logMessage(
-                f"Request error: {err}",
-                tag=plugin_name,
-                level=Qgis.Critical
-            )
+            msg = f"Request error: {err}"
+            self.qgs_tools.pushLogCritical(msg)
             return
+        
+        self.qgs_tools.pushLogWarning("Otrzymano odpowiedź z serwera Nominatim.")
         
         address_json = json.loads(str(reply.readAll(), 'utf-8'))
 
@@ -58,7 +67,9 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
         else:
             address = "No address found"
 
-        QMessageBox.information(None, "Address", address)
+        self.qgs_tools.pushLogWarning(f"Zdekodowany adres: {address}")
+
+        self.qgs_tools.pushMessage(address)
 
         return True
 
@@ -69,7 +80,7 @@ class RevealAddressPlugin:
         self.action = None
         self.settings = QgsSettings()
         self.test_mode = test_mode
-
+        
         if not self.test_mode:
             if Qgis.QGIS_VERSION_INT >= 31000:
                 try:
@@ -87,15 +98,18 @@ class RevealAddressPlugin:
                                          plugin_name=PLUGIN_NAME)
                     self.feed.initFeed()
                 except ImportError:
-                    print("Pominięto ładowanie QgisFeed (ImportError lub Test Mode)")
-
+                    QgsTools.pushLogWarning(
+                        "Pominięto ładowanie QgisFeed "
+                        "(ImportError lub Test Mode)"
+                    )
+                    
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
         self.icon_path = os.path.join(self.plugin_dir, 'icons', 'icon.svg')
         self.actions = []
         self.menu = u'&EnviroSolutions'
         self.toolbar = self.iface.mainWindow().findChild(QToolBar, 'EnviroSolutions')
-        
+
         if not self.toolbar:
             self.toolbar = self.iface.addToolBar(u'EnviroSolutions')
             self.toolbar.setObjectName(u'EnviroSolutions')
