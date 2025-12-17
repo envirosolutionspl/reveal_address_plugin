@@ -16,11 +16,9 @@ from . import PLUGIN_NAME as plugin_name
 from . import PLUGIN_VERSION as plugin_version
 
 class RevealAddressMapTool(QgsMapToolEmitPoint):
-    def __init__(self, canvas, iface):
+    def __init__(self, canvas):
         self.canvas = canvas
-        self.iface = iface
         QgsMapToolEmitPoint.__init__(self, self.canvas)
-        self.qgs_tools = QgsTools(iface)
         self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(),
             QgsCoordinateReferenceSystem.fromEpsgId(EPSG),
             canvas.mapSettings().transformContext()
@@ -30,14 +28,14 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
     def canvasReleaseEvent(self, event):
         click_coords = self.toMapCoordinates(event.pos())
         click_coords_4326 = self.coord_transform.transform(click_coords)
-        self.qgs_tools.pushMessage(
+        QgsTools.pushLogInfo(
             f"Kliknięto na mapie: {click_coords} "
             f"(EPSG:{EPSG}: {click_coords_4326})"
         )
         url = (f"https://nominatim.openstreetmap.org/reverse?format=json"
                f"&lat={click_coords_4326.y()}&lon={click_coords_4326.x()}"
         )
-        self.qgs_tools.pushMessage(f"Wysyłanie zapytania: {url}")
+        QgsTools.pushLogInfo(f"Wysyłanie zapytania: {url}")
         req = QNetworkRequest(QUrl(url))          
         reply = self.nam.get(req)
         result = reply.finished.connect(self.handleResult)
@@ -55,10 +53,10 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
 
         if err != no_error:
             msg = f"Request error: {err}"
-            self.qgs_tools.pushLogCritical(msg)
+            QgsTools.pushLogCritical(msg)
             return
         
-        self.qgs_tools.pushLogWarning("Otrzymano odpowiedź z serwera Nominatim.")
+        QgsTools.pushLogInfo("Otrzymano odpowiedź z serwera Nominatim.")
         
         address_json = json.loads(str(reply.readAll(), 'utf-8'))
 
@@ -67,9 +65,9 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
         else:
             address = "No address found"
 
-        self.qgs_tools.pushLogWarning(f"Zdekodowany adres: {address}")
+        QgsTools.pushLogInfo(f"Zdekodowany adres: {address}")
 
-        self.qgs_tools.pushMessage(address)
+        QMessageBox.information(None, "Address", address)
 
         return True
 
