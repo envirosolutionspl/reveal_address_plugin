@@ -1,40 +1,42 @@
-from qgis.core import QgsNetworkAccessManager, QgsPointXY
-from qgis.gui import QgsMapToolEmitPoint, QgsMapTool, QgsMapCanvas
-from qgis.core import QgsCoordinateTransform, QgsCoordinateReferenceSystem
-from qgis.PyQt.QtWidgets import QMessageBox, QAction, QToolBar
+from qgis.core import (QgsNetworkAccessManager, QgsPointXY,
+                       QgsCoordinateTransform, QgsCoordinateReferenceSystem,
+                       Qgis, QgsSettings)
+from qgis.gui import QgsMapToolEmitPoint
+from qgis.PyQt.QtWidgets import (QMessageBox, QAction, QToolBar, QDialog)
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 from qgis.PyQt.QtCore import QUrl, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 import json
 import os
+from .utils import QgsTools
+from .constants import EPSG
 
 """Wersja wtyczki"""
-plugin_name = "Reveal address"
-plugin_version = "1.2.1"
+from . import PLUGIN_NAME as plugin_name
+from . import PLUGIN_VERSION as plugin_version
 
 class RevealAddressMapTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
         self.canvas = canvas
         QgsMapToolEmitPoint.__init__(self, self.canvas)
-
-        # Create a coordinate transform object to transform the coordinates from the canvas CRS to WGS 84
-        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(), QgsCoordinateReferenceSystem(4326), canvas.mapSettings().transformContext())
-
-        # Create a QgsNetworkAccessManager object
+        self.coord_transform = QgsCoordinateTransform(canvas.mapSettings().destinationCrs(),
+            QgsCoordinateReferenceSystem.fromEpsgId(EPSG),
+            canvas.mapSettings().transformContext()
+        )
         self.nam = QgsNetworkAccessManager.instance()
 
     def canvasReleaseEvent(self, event):
-        # Get the click coordinates
         click_coords = self.toMapCoordinates(event.pos())
-
-        # Transform the coordinates from the canvas CRS to WGS 84
         click_coords_4326 = self.coord_transform.transform(click_coords)
-
-        # Create a GET request to the Nominatim API with the lat and lon of the click
-        url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={}&lon={}".format(click_coords_4326.y(), click_coords_4326.x())
-        req = QNetworkRequest(QUrl(url))
-
-        # Send the GET request and connect the finished signal to the self.handleResult() method
+        QgsTools.pushLogInfo(
+            f"Kliknięto na mapie: {click_coords} "
+            f"(EPSG:{EPSG}: {click_coords_4326})"
+        )
+        url = (f"https://nominatim.openstreetmap.org/reverse?format=json"
+               f"&lat={click_coords_4326.y()}&lon={click_coords_4326.x()}"
+        )
+        QgsTools.pushLogInfo(f"Wysyłanie zapytania: {url}")
+        req = QNetworkRequest(QUrl(url))          
         reply = self.nam.get(req)
         result = reply.finished.connect(self.handleResult)
 
@@ -43,45 +45,77 @@ class RevealAddressMapTool(QgsMapToolEmitPoint):
 
     def handleResult(self):
         reply = self.sender()
-        if reply.error() != QNetworkReply.NoError:
-            print("Request error: ", reply.error())
+        err = reply.error()
+        try:
+            no_error = QNetworkReply.NetworkError.NoError
+        except AttributeError:
+            no_error = QNetworkReply.NoError
+
+        if err != no_error:
+            msg = f"Request error: {err}"
+            QgsTools.pushLogCritical(msg)
             return
+        
+        QgsTools.pushLogInfo("Otrzymano odpowiedź z serwera Nominatim.")
+        
         address_json = json.loads(str(reply.readAll(), 'utf-8'))
+
         if "display_name" in address_json:
             address = address_json["display_name"]
         else:
             address = "No address found"
 
-        # Show the address in a message box
+        QgsTools.pushLogInfo(f"Zdekodowany adres: {address}")
+
         QMessageBox.information(None, "Address", address)
-        
+
         return True
 
 
 class RevealAddressPlugin:
-    def __init__(self, iface):
+    def __init__(self, iface, test_mode=False):
         self.map_tool = None
         self.action = None
-        # Save reference to the QGIS interface
-        self.iface = iface
-        # initialize plugin directory
-        self.plugin_dir = os.path.dirname(__file__)
-        self.icon_path = f'{self.plugin_dir}\icons\icon.svg'
+        self.settings = QgsSettings()
+        self.test_mode = test_mode
+        
+        if not self.test_mode:
+            if Qgis.QGIS_VERSION_INT >= 31000:
+                try:
+                    from .qgis_feed import QgisFeed, QgisFeedDialog
+                    from . import PLUGIN_NAME
+                    self.selected_industry = self.settings.value("selected_industry", None)
+                    show_dialog = self.settings.value("showDialog", True, type=bool)
 
+                    if self.selected_industry is None and show_dialog:
+                        self.showBranchSelectionDialog()
+
+                    select_indust_session = self.settings.value('selected_industry')
+
+                    self.feed = QgisFeed(selected_industry=select_indust_session, 
+                                         plugin_name=PLUGIN_NAME)
+                    self.feed.initFeed()
+                except ImportError:
+                    QgsTools.pushLogWarning(
+                        "Pominięto ładowanie QgisFeed "
+                        "(ImportError lub Test Mode)"
+                    )
+                    
+        self.iface = iface
+        self.plugin_dir = os.path.dirname(__file__)
+        self.icon_path = os.path.join(self.plugin_dir, 'icons', 'icon.svg')
         self.actions = []
         self.menu = u'&EnviroSolutions'
         self.toolbar = self.iface.mainWindow().findChild(QToolBar, 'EnviroSolutions')
-        
+
         if not self.toolbar:
             self.toolbar = self.iface.addToolBar(u'EnviroSolutions')
             self.toolbar.setObjectName(u'EnviroSolutions')
             
         self.shortcut = None
-        # Check if plugin was started the first time in current QGIS session
-        # Must be set in initGui() to survive plugin reloads
         self.first_start = None
 
-    def add_action(
+    def addAction(
                 self,
                 icon_path,
                 text,
@@ -116,7 +150,6 @@ class RevealAddressPlugin:
 
             return action
 
-    # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
 
@@ -128,39 +161,46 @@ class RevealAddressPlugin:
         :returns: Translated version of message.
         :rtype: QString
         """
-        # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('RevealAddressPlugin', message)
     
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        self.add_action(
+        self.addAction(
             self.icon_path,
             text=self.tr(u'Reveal Address'),
             callback=self.run,
             parent=self.iface.mainWindow()
         )
-        
-        # will be set False in run()
+
         self.first_start = True
 
     def run(self):
-        # Create and set the map tool
         self.map_tool = RevealAddressMapTool(self.iface.mapCanvas())
         self.iface.mapCanvas().setMapTool(self.map_tool)
 
+    def showBranchSelectionDialog(self):
+        self.qgisfeed_dialog = QgisFeedDialog()
+
+        if self.qgisfeed_dialog.exec_() == QDialog.Accepted:
+            self.selected_branch = self.qgisfeed_dialog.comboBox.currentText()
+            
+            #Zapis w QGIS3.ini
+            self.settings.setValue("selected_industry", self.selected_branch)  
+            self.settings.setValue("showDialog", False)
+            self.settings.sync()
+
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-        for action in self.actions:
-            self.iface.removePluginMenu(
-                u'&EnviroSolutions',
-                action)
-            # self.iface.removeToolBarIcon(action)
-            self.toolbar.removeAction(action)
-                
-        # Remove the map tool and action when the plugin is unloaded
-        if self.map_tool:
-            self.iface.mapCanvas().unsetMapTool(self.map_tool)
+        if hasattr(self, 'actions'):
+                    for action in self.actions:
+                        self.iface.removePluginMenu(
+                            u'&EnviroSolutions',
+                            action)
 
-        # remove the toolbar
-        del self.toolbar
+        if hasattr(self, 'toolbar') and self.toolbar:
+            self.toolbar.clear() 
+            self.toolbar = None 
+            
+        if hasattr(self, 'map_tool') and self.map_tool:
+            self.iface.mapCanvas().unsetMapTool(self.map_tool)
