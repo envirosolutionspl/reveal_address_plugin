@@ -23,10 +23,12 @@ repository=https://github.com/envirosolutionspl/reveal_address_plugin
 
 hasProcessingProvider=no
 changelog=
-    v1.3.0
-    * Dodanie kompatybilności z Qt6 i przygotowanie wsparcia dla QGIS 4.
-    * Dodanie testów automatycznych.
-    * Dodanie komunikatów QGIS Feed.
+    v1.3.1
+      * Dodanie informacji o qgisMaximumVersion
+#   v1.3.0
+#   * Dodanie kompatybilności z Qt6 i przygotowanie wsparcia dla QGIS 4.
+#   * Dodanie testów automatycznych.
+#   * Dodanie komunikatów QGIS Feed.
 #   v1.2.1
 #   * Zmiana loga wtyczki
 #   * Unifikacja wyglądu wtyczki
