@@ -12,9 +12,9 @@ about=Plugin allows user to get to know address for a picked by user point. Plug
 
 version=1.3.1
 author=ChatGPT & EnviroSolutions Sp. z o.o.
-email=office@envirosolutions.pl
+email=gis@envirosolutions.pl
 
-homepage=https://github.com/envirosolutionspl/reveal_address_plugin
+homepage=https://envirosolutions.pl/wtyczki-qgis/reveal-address/
 tracker=https://github.com/envirosolutionspl/reveal_address_plugin/issues
 repository=https://github.com/envirosolutionspl/reveal_address_plugin
 # End of mandatory metadata
