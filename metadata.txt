@@ -23,8 +23,10 @@ repository=https://github.com/envirosolutionspl/reveal_address_plugin
 
 hasProcessingProvider=no
 changelog=
-    v1.3.1
-      * Dodanie informacji o qgisMaximumVersion
+    v1.3.2
+      * Zamiana przekierowania homepage, zmiana adresu email na aktualny
+#   v1.3.1
+#   * Dodanie informacji o qgisMaximumVersion
 #   v1.3.0
 #   * Dodanie kompatybilności z Qt6 i przygotowanie wsparcia dla QGIS 4.
 #   * Dodanie testów automatycznych.
