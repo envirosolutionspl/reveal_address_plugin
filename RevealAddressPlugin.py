@@ -81,26 +81,20 @@ class RevealAddressPlugin:
         
         if not self.test_mode:
             if Qgis.QGIS_VERSION_INT >= 31000:
-                try:
-                    from .qgis_feed import QgisFeed, QgisFeedDialog
-                    from . import PLUGIN_NAME
-                    self.selected_industry = self.settings.value("selected_industry", None)
-                    show_dialog = self.settings.value("showDialog", True, type=bool)
+                from .qgis_feed import QgisFeed, QgisFeedDialog
+                from . import PLUGIN_NAME
+                self.selected_industry = self.settings.value("selected_industry", None)
+                show_dialog = self.settings.value("showDialog", True, type=bool)
 
-                    if self.selected_industry is None and show_dialog:
-                        self.showBranchSelectionDialog()
+                if self.selected_industry is None and show_dialog:
+                    self.showBranchSelectionDialog()
 
-                    select_indust_session = self.settings.value('selected_industry')
+                select_indust_session = self.settings.value('selected_industry')
 
-                    self.feed = QgisFeed(selected_industry=select_indust_session, 
-                                         plugin_name=PLUGIN_NAME)
-                    self.feed.initFeed()
-                except ImportError:
-                    QgsTools.pushLogWarning(
-                        "Pominięto ładowanie QgisFeed "
-                        "(ImportError lub Test Mode)"
-                    )
-                    
+                self.feed = QgisFeed(selected_industry=select_indust_session, 
+                                        plugin_name=PLUGIN_NAME)
+                self.feed.initFeed()
+
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
         self.icon_path = os.path.join(self.plugin_dir, 'icons', 'icon.svg')
